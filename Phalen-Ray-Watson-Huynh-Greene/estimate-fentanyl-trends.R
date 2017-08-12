@@ -341,7 +341,8 @@ estimate <- function(ZIP = NULL, # zip code of death
                      ZIP_SIMS = NULL) # if zip code is null, simulate zip codes from estimated population sigma
 {
   
-  estimated.OD.rate <- 0
+  # start with intercept
+  estimated.OD.rate <- post$a
   
   # Look up zip code index
   if (!is.null(ZIP)){ZIP_CODE_LOOKUP <-  which(zip.key == ZIP)}
@@ -351,7 +352,14 @@ estimate <- function(ZIP = NULL, # zip code of death
     JULIANZ <- (jul - mean(d$julian)) / sd(d$julian)
   }
   
+  # calculate z-scored age
+  ageZ <- ((AGE - mean(d$Age)) / sd(d$Age))
   
+  # add age information (will do ~nothing if age isn't specified or is average)
+  estimated.OD.rate <- estimated.OD.rate + post$ba * ageZ + post$ba2 * ageZ^2 +  post$bja * ageZ * JULIANZ
+  
+  
+  # if race/sex is specified
   if (!is.null(RACE) & !is.null(SEX)){
     
     # 1 = white female; 2 = black female; 3 = other female; 
@@ -366,81 +374,34 @@ estimate <- function(ZIP = NULL, # zip code of death
     B2 <- (post$bju2 + post$bju2_RACE_SEX[,race_sex_index]) * (JULIANZ )^2
     B3 <- (post$bju3 + post$bju3_RACE_SEX[,race_sex_index]) * (JULIANZ)^3
     
+    estimated.OD.rate <- estimated.OD.rate + post$a_RACE_SEX[,race_sex_index] + B1 + B2 + B3
+      
   }
   
-  # calculate z-scored age
-  ageZ <- ((AGE - mean(d$Age)) / sd(d$Age))
-  
-  # get year 
-  if (!is.null(JULIANZ)){
-    YEAR <- month.day.year(( JULIANZ * sd(d$julian) ) + mean(d$julian))$year
-  }
-  
-  # If zip code is unspecified or null, simulate unobserved zip codes
-  # using the estimated population variance for zip code
-  if ( is.null(ZIP)){     
+  if ( !is.null(ZIP)){  # If zip code is specified
     
-    
-    if (!is.null(RACE) & !is.null(SEX)){
-      estimated.OD.rate <- logistic( post$a + post$a_RACE_SEX[,race_sex_index] + B1 + B2 + B3 + post$ba *  ageZ + post$ba2 *  ageZ^2 + post$bja * ageZ * JULIANZ +
-                                       ZIP_SIMS 
-      )
-    }else{
-      # if race/sex is unspecified we don't bother simulating because it won't effect the
-      # predictions we're trying to highlight (e.g., variations by zip code)
-      estimated.OD.rate <- logistic( post$a + post$bju * JULIANZ + post$bju2 * JULIANZ^2 + post$bju3 * JULIANZ^3 + post$ba *  ageZ + post$ba2 *  ageZ^2 + post$bja * ageZ * JULIANZ +
-                                       ZIP_SIMS 
-      )
-    }
-  }
-  
-  
-  
-  # If zip code is specified
-  if ( !is.null(ZIP)){
-    
-    # check if our model has an estimate for it
+    # make sure our model has an estimate for it
     if ( ZIP %in% zip.key){
-      
-      if (!is.null(RACE) & !is.null(SEX)){
-        
-        
+    
         # and vary intercept by it
-        estimated.OD.rate <- logistic( post$a + post$a_RACE_SEX[,race_sex_index] + B1 + B2 + B3 + post$ba *  ageZ + post$ba2 *  ageZ^2 + post$bja * ageZ * JULIANZ +
-                                         post$a_ZIP[,ZIP_CODE_LOOKUP]
-        )
-      }else{
-        estimated.OD.rate <- logistic( post$a + post$bju * JULIANZ + post$bju2 * JULIANZ^2 + post$bju3 * JULIANZ^3 + post$ba *  ageZ + post$ba2 *  ageZ^2 + post$bja * ageZ * JULIANZ +
-                                         post$a_ZIP[,ZIP_CODE_LOOKUP] 
-        )
-      }
-      
-      
-    }else{ # sometimes the zip code will be specified but the model wasn't fit to it -- for example, no one overdosed there -- so we treat
-      # it as an unknown zip code
-      
-      if (!is.null(RACE) & !is.null(SEX)){
+        estimated.OD.rate <- estimated.OD.rate + post$a_ZIP[,ZIP_CODE_LOOKUP]
         
-        estimated.OD.rate <- logistic( post$a + post$a_RACE_SEX[,race_sex_index] + B1 + B2 + B3 + post$ba *  ageZ + post$ba2 *  ageZ^2 + post$bja * ageZ * JULIANZ +
-                                         ZIP_SIMS
-        )
-      }else{
-        estimated.OD.rate <- logistic( post$a + post$bju * JULIANZ + post$bju2 * JULIANZ^2 + post$bju3 * JULIANZ^3 + post$ba *  ageZ + post$ba2 *  ageZ^2 + post$bja * ageZ * JULIANZ +
-                                         ZIP_SIMS 
-        )
+    }else{
+      
+      # otherwise simulate variation by zip code
+      estimated.OD.rate <- estimated.OD.rate + ZIP_SIMS
+      
       }
-    }
   }
   
+
   
-  
+  # take the logistic of the estimate to get a rate
+  estimated.OD.rate <- logistic(estimated.OD.rate) 
   
   return(estimated.OD.rate)
   
 }
-
-
-
 
 
 # Figure 3
@@ -539,14 +500,9 @@ lines(julianz.seq,grand.mu, col = "black", lwd=2)
 
 
 
-
-
-
-
-
 # FIGURE 4
 # We want a matrix of graphs arranged in 4 rows (for years) and 6 columns (for race/gender combos)
-par(mfrow=c(4,6), mar=c(.75,.75,.75,.75))
+par(mfrow=c(4,6), mar=c(.75,.75,.75,.75), omi=c(rep(.5,4)))
 
 # Simulate varying race and zip code parameters for when these are left unspecified
 n.sims <- nrow(post[[1]])
@@ -673,7 +629,6 @@ for (year.to.plot in c(2011,2013,2015,2017)) {
 
 
 
-
 # FIGURE 5
 # A map
 
@@ -683,7 +638,7 @@ zips <- geojsonio::geojson_read("http://data.indy.gov/datasets/bba987ced0cf4b708
                                 what = "sp")
 
 # create a quick function that takes zip codes from Marion county and gets fentanyl OD rates
-zip.adj.year <- function(ZIP) mean(estimate(ZIP, YEAR=mean(d$Year), MONTH=7))
+zip.adj.year <- function(ZIP) mean(estimate(ZIP, ZIP_SIMS=ZIP_SIMS, YEAR=mean(d$Year), MONTH=7))
 
 
 # Construct estimate for Fentanyl-related lethal overdose rates for each zip code
