@@ -25,7 +25,7 @@ sapply(wants, require, character.only = TRUE)
 ##########################
 # load and prep data
 
-d <- read.csv("/MarionCountyOverdoseDeathDataset2010-2017thruApril.csv")
+d <- read.csv("/Users/PeterPhalen/Dropbox/Manuscripts/BRADRAY/coroner/MarionCountyOverdoseDeathDataset2010-2017thruApril.csv")
 
 # Get dates of death as vectors of months, days, and years
 DOD <- dates(as.character(d$DOD), format= "m/d/y")
@@ -270,7 +270,7 @@ fentanyl.od.rate.model <- map2stan(
 #   a_ZIP ~ normal( 0 , sigma_ZIP );
 #   a ~ normal( 0 , 5 );
 #   sigma_RACE_SEX ~ cauchy( 0 , 2.5 );
-#   L_Rho_RACE_SEX ~ lkj_corr_cholesky( 4 );
+#   L_Rho_RACE_SEX ~ lkj_corr_cholesky( 2 );
 #   to_vector(z_N_race_sex_ints) ~ normal( 0 , 1 );
 #   for ( i in 1:N ) {
 #     BJU3[i] = (bju3 + bju3_RACE_SEX[race_sex_ints[i]]);
