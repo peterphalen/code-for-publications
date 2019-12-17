@@ -5,7 +5,7 @@ Code to reproduce some published scholarly articles and preprints.
 
 [“Baltimore Ceasefire 365: Estimated impact of a recurring community-led ceasefire on gun violence”](Phalen-Bridgeford-Gant-Kivisto-Ray-Fitzgerald)
 -------
-Contains code to fit a Bayesian multilevel regression to estimate the impact of recurring ceasefires on gun violence in Baltimore, after accounting for yearly seasonality, calendar days, weekdays, and overall trends.
+[Phalen-Bridgeford-Gant-Kivisto-Ray-Fitzgerald](Phalen-Bridgeford-Gant-Kivisto-Ray-Fitzgerald) Contains code to fit a Bayesian multilevel regression to estimate the impact of recurring ceasefires on gun violence in Baltimore, after accounting for yearly seasonality, calendar days, weekdays, and overall trends.
 
 
 [“The Fentanyl Crisis in Indianapolis: Estimating trends using multilevel Bayesian models”](Phalen-Ray-Watson-Huynh-Greene)
